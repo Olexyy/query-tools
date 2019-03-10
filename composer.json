@@ -1,0 +1,24 @@
+{
+    "name": "Olexyy/query-tools",
+    "description": "Query tools",
+    "type": "library",
+    "repositories": [
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^6.3",
+        "symfony/dom-crawler": "~3.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Olexyy",
+            "email": "olexyy.mails@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "Olexyy\\QueryTools\\": "src"
+        }
+    }
+}
