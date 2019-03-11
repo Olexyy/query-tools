@@ -84,18 +84,22 @@ class Generator implements GeneratorInterface {
   public function __construct(array $options, Client $client = NULL) {
 
     $this->client = $client ? $client : new Client();
-    $this->connectTimeout = !empty($options['connectTimeout']) ? $options['connectTimeout'] : 5;
+    $this->connectTimeout = !empty($options['connectTimeout']) ? $options['connectTimeout'] : 3;
     $this->options = $options;
     $this->provider = new ProxyNova();
+    $this->proxies = !empty($options['proxies']) ? $options['proxies'] : [];
   }
 
   /**
    * Getter for fresh structure.
    *
-   * @return array|string[]
-   *   Values.
+   * @param bool $findLive
+   *   Find live proxy and select.
+   *
+   * @return $this
+   *   Chaining.
    */
-  public function generate() {
+  public function generate($findLive = TRUE) {
 
     $response = $this->client->get($this->provider->getUrl(), [
       'User-Agent' => UserAgentGenerator::create()->generate(),
@@ -104,7 +108,43 @@ class Generator implements GeneratorInterface {
     $content = $response->getBody()->getContents();
     // This will return null if none match or parse error.
     $this->proxies = $this->provider->parse($content);
-    $this->proxy = $this->findLive($this->proxies);
+    if ($findLive) {
+      $this->proxy = $this->findLive();
+    }
+
+    return $this;
+  }
+
+  /**
+   * Getter.
+   *
+   * @return Proxy[]
+   *   Proxy list.
+   */
+  public function getProxies() {
+
+    return $this->proxies;
+  }
+
+  /**
+   * Proxies setter.
+   *
+   * @param Proxy[]|array $proxies
+   *   Proxies.
+   */
+  public function setProxies($proxies) {
+
+    $this->proxies = $proxies;
+  }
+
+  /**
+   * Getter.
+   *
+   * @return Proxy
+   *   Selected proxy.
+   */
+  public function getProxy() {
+
     return $this->proxy;
   }
 
@@ -127,25 +167,40 @@ class Generator implements GeneratorInterface {
   }
 
   /**
-   * @param array|\Olexyy\QueryTools\Proxy\Proxy[] $proxies
+   * Getter for live proxy.
    *
    * @return \Olexyy\QueryTools\Proxy\Proxy|mixed|null
+   *   Proxy if any.
    */
-  public function findLive(array $proxies) {
+  public function findLive() {
 
-    // We try ping `green` proxies (80%+) up time.
-    foreach ($proxies as $proxy) {
-      if ($proxy->upTime > 80) {
+    foreach ($this->proxies as $index => $proxy) {
+      if ($proxy->upTime >= 80) {
         if ($this->ping($proxy)) {
           return $proxy;
         }
+        else {
+          unset($this->proxies[$index]);
+        }
       }
     }
-    // We try ping `yellow` proxies (50%+) up time.
-    foreach ($proxies as $proxy) {
-      if ($proxy->upTime > 50) {
+    foreach ($this->proxies as $index => $proxy) {
+      if ($proxy->upTime >= 50 && $proxy->upTime < 80) {
         if ($this->ping($proxy)) {
           return $proxy;
+        }
+        else {
+          unset($this->proxies[$index]);
+        }
+      }
+    }
+    foreach ($this->proxies as $index => $proxy) {
+      if ($proxy->upTime < 50) {
+        if ($this->ping($proxy)) {
+          return $proxy;
+        }
+        else {
+          unset($this->proxies[$index]);
         }
       }
     }

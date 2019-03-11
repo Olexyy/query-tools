@@ -83,4 +83,27 @@ class Proxy {
     return "{$this->type}://{$this->ip}:{$this->port}";
   }
 
+  /**
+   * Serializer.
+   *
+   * @return string
+   *   Data.
+   */
+  public function sleep() {
+
+    return serialize($this);
+  }
+
+  /**
+   * @param string $data
+   *   Data.
+   *
+   * @return $this
+   *   This object.
+   */
+  public static function wakeUp($data) {
+
+    return unserialize($data);
+  }
+
 }
